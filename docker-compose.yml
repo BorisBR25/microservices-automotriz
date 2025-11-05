@@ -1,0 +1,71 @@
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: automotriz-db
+    environment:
+      POSTGRES_USER: automotriz_user
+      POSTGRES_PASSWORD: automotriz_pass
+      POSTGRES_DB: automotriz_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - automotriz-network
+
+  # Servicio de Autenticacion
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    environment:
+      PORT: 3001
+      JWT_SECRET: automotriz-secret-key-2024
+      DATABASE_URL: postgresql://automotriz_user:automotriz_pass@postgres:5432/automotriz_db
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - automotriz-network
+    restart: unless-stopped
+
+  # Servicio de Inventario
+  inventario-service:
+    build: ./inventario-service
+    container_name: inventario-service
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://automotriz_user:automotriz_pass@postgres:5432/automotriz_db
+    ports:
+      - "3004:3004"
+    depends_on:
+      - postgres
+    networks:
+      - automotriz-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    environment:
+      PORT: 3000
+      JWT_SECRET: automotriz-secret-key-2024
+      AUTH_SERVICE_URL: http://auth-service:3001
+      INVENTARIO_SERVICE_URL: http://inventario-service:3004
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - inventario-service
+    networks:
+      - automotriz-network
+    restart: unless-stopped
+
+networks:
+  automotriz-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
