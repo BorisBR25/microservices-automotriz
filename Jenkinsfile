@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_VERSION = '2.0'
         PROJECT_NAME = 'microservices-automotriz'
     }
 
@@ -14,11 +13,23 @@ pipeline {
             }
         }
 
+        stage('Instalar Docker Compose') {
+            steps {
+                echo 'Instalando Docker Compose...'
+                sh '''
+                    if ! command -v docker-compose &> /dev/null; then
+                        curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+                        chmod +x /usr/local/bin/docker-compose
+                    fi
+                    docker-compose --version
+                '''
+            }
+        }
+
         stage('Verificar Docker') {
             steps {
                 echo 'Verificando instalacion de Docker...'
                 sh 'docker --version'
-                sh 'docker compose --version || docker compose version'
             }
         }
 
@@ -26,7 +37,7 @@ pipeline {
             steps {
                 echo 'Deteniendo y eliminando contenedores anteriores...'
                 sh '''
-                    docker compose down --remove-orphans || true
+                    docker-compose down --remove-orphans || true
                     docker system prune -f || true
                 '''
             }
@@ -35,7 +46,7 @@ pipeline {
         stage('Construir Imagenes') {
             steps {
                 echo 'Construyendo imagenes Docker de los microservicios...'
-                sh 'docker compose build --no-cache'
+                sh 'docker-compose build --no-cache'
             }
         }
 
@@ -53,7 +64,7 @@ pipeline {
         stage('Desplegar Servicios') {
             steps {
                 echo 'Desplegando microservicios con Docker Compose...'
-                sh 'docker compose up -d'
+                sh 'docker-compose up -d'
             }
         }
 
@@ -62,7 +73,7 @@ pipeline {
                 echo 'Verificando estado de los contenedores...'
                 sh '''
                     sleep 10
-                    docker compose ps
+                    docker-compose ps
                     echo "\\n=== Estado de los servicios ==="
                     docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
                 '''
@@ -96,7 +107,7 @@ pipeline {
         }
         failure {
             echo 'Pipeline fallido. Revisar logs para mas detalles.'
-            sh 'docker compose logs || true'
+            sh 'docker-compose logs || true'
         }
     }
 }
