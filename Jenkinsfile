@@ -37,8 +37,8 @@ pipeline {
             steps {
                 echo 'Deteniendo y eliminando contenedores anteriores...'
                 sh '''
-                    docker-compose down --remove-orphans || true
-                    docker system prune -f || true
+                    docker-compose -f docker-compose.yml down --remove-orphans || true
+                    docker container prune -f || true
                 '''
             }
         }
