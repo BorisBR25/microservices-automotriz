@@ -1,113 +1,37 @@
 pipeline {
     agent any
 
-    environment {
-        PROJECT_NAME = 'microservices-automotriz'
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Clonar Repositorio') {
             steps {
-                echo 'Clonando repositorio desde GitHub...'
+                echo 'Clonando repositorio...'
                 checkout scm
-            }
-        }
-
-        stage('Instalar Docker Compose') {
-            steps {
-                echo 'Instalando Docker Compose...'
-                sh '''
-                    if ! command -v docker-compose &> /dev/null; then
-                        curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-                        chmod +x /usr/local/bin/docker-compose
-                    fi
-                    docker-compose --version
-                '''
-            }
-        }
-
-        stage('Verificar Docker') {
-            steps {
-                echo 'Verificando instalacion de Docker...'
-                sh 'docker --version'
-            }
-        }
-
-        stage('Limpiar Contenedores Anteriores') {
-            steps {
-                echo 'Deteniendo y eliminando contenedores anteriores...'
-                sh '''
-                    docker-compose -f docker-compose.yml down --remove-orphans || true
-                    docker container prune -f || true
-                '''
             }
         }
 
         stage('Construir Imagenes') {
             steps {
-                echo 'Construyendo imagenes Docker de los microservicios...'
-                sh 'docker-compose build --no-cache'
+                echo 'Construyendo imagenes Docker...'
+                sh 'docker build -t api-gateway ./api-gateway'
+                sh 'docker build -t auth-service ./auth-service'
+                sh 'docker build -t inventario-service ./inventario-service'
             }
         }
 
-        stage('Ejecutar Pruebas') {
+        stage('Listar Imagenes') {
             steps {
-                echo 'Ejecutando pruebas de los servicios...'
-                sh '''
-                    echo "Verificando sintaxis de archivos..."
-                    find . -name "*.js" -type f -exec echo "Archivo encontrado: {}" \\;
-                    echo "Pruebas completadas exitosamente"
-                '''
-            }
-        }
-
-        stage('Desplegar Servicios') {
-            steps {
-                echo 'Desplegando microservicios con Docker Compose...'
-                sh 'docker-compose up -d'
-            }
-        }
-
-        stage('Verificar Despliegue') {
-            steps {
-                echo 'Verificando estado de los contenedores...'
-                sh '''
-                    sleep 10
-                    docker-compose ps
-                    echo "\\n=== Estado de los servicios ==="
-                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
-                '''
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                echo 'Realizando health check de los servicios...'
-                sh '''
-                    sleep 5
-                    echo "Verificando API Gateway (puerto 3000)..."
-                    curl -f http://localhost:3000/health || echo "API Gateway iniciando..."
-
-                    echo "Verificando Auth Service (puerto 3001)..."
-                    curl -f http://localhost:3001/health || echo "Auth Service iniciando..."
-
-                    echo "Verificando Inventario Service (puerto 3004)..."
-                    curl -f http://localhost:3004/health || echo "Inventario Service iniciando..."
-                '''
+                echo 'Imagenes construidas:'
+                sh 'docker images | grep -E "api-gateway|auth-service|inventario-service"'
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline finalizado'
-        }
         success {
-            echo 'Pipeline ejecutado exitosamente! Microservicios desplegados correctamente.'
+            echo 'Pipeline ejecutado exitosamente!'
         }
         failure {
-            echo 'Pipeline fallido. Revisar logs para mas detalles.'
-            sh 'docker-compose logs || true'
+            echo 'Pipeline fallido.'
         }
     }
 }

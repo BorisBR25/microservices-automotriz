@@ -1,4 +1,18 @@
 services:
+  # Jenkins
+  jenkins:
+    build: ./jenkins
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - automotriz-network
+    restart: unless-stopped
+
   # Base de datos PostgreSQL
   postgres:
     image: postgres:15-alpine
@@ -69,3 +83,4 @@ networks:
 
 volumes:
   postgres_data:
+  jenkins_home:
