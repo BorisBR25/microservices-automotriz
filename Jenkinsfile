@@ -10,12 +10,6 @@ pipeline {
         }
 
         stage('Instalar Dependencias y Ejecutar Pruebas') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
             steps {
                 echo 'Instalando dependencias y ejecutando pruebas...'
 
@@ -24,22 +18,17 @@ pipeline {
 
                     for (service in services) {
                         echo "Procesando ${service}..."
-                        dir(service) {
-                            sh 'npm ci'
-                            sh 'npm run test:cov'
-                        }
+                        sh """
+                            docker run --rm -v \$(pwd)/${service}:/app -w /app node:18-alpine sh -c '
+                                npm ci && npm run test:cov
+                            '
+                        """
                     }
                 }
             }
         }
 
         stage('Subir Cobertura a Codecov') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
             steps {
                 echo 'Subiendo reportes de cobertura a Codecov...'
 
@@ -49,14 +38,14 @@ pipeline {
                     withCredentials([string(credentialsId: 'codecov-token', variable: 'CODECOV_TOKEN')]) {
                         for (service in services) {
                             echo "Subiendo cobertura de ${service}..."
-                            dir(service) {
-                                sh '''
-                                    apk add --no-cache curl bash
-                                    curl -Os https://uploader.codecov.io/latest/linux/codecov
-                                    chmod +x codecov
-                                    ./codecov -t ${CODECOV_TOKEN} -f coverage/lcov.info -F ${service}
-                                '''
-                            }
+                            sh """
+                                docker run --rm -v \$(pwd)/${service}:/app -w /app -e CODECOV_TOKEN=${CODECOV_TOKEN} node:18-alpine sh -c '
+                                    apk add --no-cache curl bash &&
+                                    curl -Os https://uploader.codecov.io/latest/linux/codecov &&
+                                    chmod +x codecov &&
+                                    ./codecov -t \${CODECOV_TOKEN} -f coverage/lcov.info -F ${service}
+                                '
+                            """
                         }
                     }
                 }
