@@ -54,9 +54,9 @@ EOF
                         for (service in services) {
                             echo "Subiendo cobertura de ${service}..."
                             sh """
-                                curl -Os https://uploader.codecov.io/latest/linux/codecov
+                                curl -Os https://cli.codecov.io/latest/linux/codecov
                                 chmod +x codecov
-                                ./codecov -t ${CODECOV_TOKEN} -f coverage-${service}/lcov.info -F ${service}
+                                ./codecov upload-process --fail-on-error -t ${CODECOV_TOKEN} -f coverage-${service}/lcov.info -F ${service} -r BorisBR25/microservices-automotriz
                             """
                         }
                     }
