@@ -51,12 +51,20 @@ EOF
                     def services = ['api-gateway', 'inventario-service']
 
                     withCredentials([string(credentialsId: 'codecov-token', variable: 'CODECOV_TOKEN')]) {
+                        // Descargar codecov CLI una sola vez
+                        sh """
+                            curl -Os https://cli.codecov.io/latest/linux/codecov
+                            chmod +x codecov
+                        """
+
                         for (service in services) {
-                            echo "Subiendo cobertura de ${service}..."
+                            echo "Preparando y subiendo cobertura de ${service}..."
                             sh """
-                                curl -Os https://cli.codecov.io/latest/linux/codecov
-                                chmod +x codecov
-                                ./codecov upload-process --fail-on-error -t ${CODECOV_TOKEN} -f coverage-${service}/lcov.info -F ${service} -r BorisBR25/microservices-automotriz
+                                # Ajustar rutas en lcov.info para que sean relativas al repositorio
+                                sed -i 's|SF:/app/|SF:${service}/|g' coverage-${service}/lcov.info
+
+                                # Subir a Codecov
+                                ./codecov upload-process --fail-on-error -t ${CODECOV_TOKEN} -f coverage-${service}/lcov.info -F ${service}
                             """
                         }
                     }
