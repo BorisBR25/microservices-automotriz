@@ -10,6 +10,12 @@ pipeline {
         }
 
         stage('Instalar Dependencias y Ejecutar Pruebas') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
             steps {
                 echo 'Instalando dependencias y ejecutando pruebas...'
 
@@ -28,6 +34,12 @@ pipeline {
         }
 
         stage('Subir Cobertura a Codecov') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
             steps {
                 echo 'Subiendo reportes de cobertura a Codecov...'
 
@@ -39,6 +51,7 @@ pipeline {
                             echo "Subiendo cobertura de ${service}..."
                             dir(service) {
                                 sh '''
+                                    apk add --no-cache curl bash
                                     curl -Os https://uploader.codecov.io/latest/linux/codecov
                                     chmod +x codecov
                                     ./codecov -t ${CODECOV_TOKEN} -f coverage/lcov.info -F ${service}
