@@ -20,7 +20,7 @@ pipeline {
                         echo "Procesando ${service}..."
                         sh """
                             docker run --rm -v \$(pwd)/${service}:/app -w /app node:18-alpine sh -c '
-                                npm ci && npm run test:cov
+                                npm install && npm run test:cov
                             '
                         """
                     }
