@@ -2,20 +2,29 @@ coverage:
   status:
     project:
       default:
-        target: 70%
-        threshold: 5%
+        target: auto
+        threshold: 1%
     patch:
       default:
-        target: 70%
+        target: auto
 
 ignore:
   - "**/*.spec.ts"
   - "**/*.test.ts"
-  - "**/main.ts"
-  - "**/*.module.ts"
   - "**/node_modules/**"
   - "**/dist/**"
   - "**/coverage/**"
+
+flags:
+  api-gateway:
+    paths:
+      - api-gateway/
+  inventario-service:
+    paths:
+      - inventario-service/
+  auth-service:
+    paths:
+      - auth-service/
 
 comment:
   layout: "reach, diff, flags, files"
