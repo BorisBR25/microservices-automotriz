@@ -61,10 +61,11 @@ EOF
                             echo "Preparando y subiendo cobertura de ${service}..."
                             sh """
                                 # Ajustar rutas en lcov.info para que sean relativas al repositorio
-                                sed -i 's|SF:/app/|SF:${service}/|g' coverage-${service}/lcov.info
+                                sed 's|SF:/app/src/|SF:${service}/src/|g' coverage-${service}/lcov.info > ${service}-fixed.lcov
+                                sed -i 's|SF:src/|SF:${service}/src/|g' ${service}-fixed.lcov
 
-                                # Subir a Codecov
-                                ./codecov upload-process --fail-on-error -t ${CODECOV_TOKEN} -f coverage-${service}/lcov.info -F ${service}
+                                # Subir solo el archivo corregido a Codecov
+                                ./codecov upload-process --fail-on-error -t ${CODECOV_TOKEN} -f ${service}-fixed.lcov -F ${service}
                             """
                         }
                     }
